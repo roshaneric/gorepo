@@ -10,7 +10,7 @@ import (
 var theLimit int64 = 2000
 
 func main() {
-	gopher2()
+	gopher1()
 }
 
 func gopher1() {
@@ -25,8 +25,8 @@ func gopher1() {
 	for {
 		select {
 		case e := <-errCh:
-			fmt.Printf("%v", e)
 			printResults(results)
+			fmt.Printf("%v", e)
 			return
 		case <-done:
 			wg.Wait()
@@ -41,6 +41,9 @@ func gopher1() {
 					wg.Done()
 				}()
 				pg := atomic.AddInt64(&page, 1)
+				if pg == 100 {
+					done <- true
+				}
 				res, err := process(pg, theLimit)
 				if err != nil {
 					errCh <- err
@@ -48,9 +51,6 @@ func gopher1() {
 				mux.Lock()
 				results[pg] = res
 				mux.Unlock()
-				if pg == 100 {
-					done <- true
-				}
 			}()
 		}
 	}
