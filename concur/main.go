@@ -7,13 +7,24 @@ import (
 	"sync/atomic"
 )
 
-var theLimit int64 = 2000
+var theLimit int64 = 50
 
 func main() {
-	gopher1()
+	roshGopher()
 }
 
-func gopher1() {
+func junGopher() {
+	result, e := subJunGopher()
+	if e != nil {
+		fmt.Printf("%v\n", e)
+		printResults(result)
+		return
+	}
+
+	printResults(result)
+}
+
+func subJunGopher() (map[int64]int64, error) {
 	var mux sync.Mutex
 	done := make(chan bool, 1)
 	errCh := make(chan error, 1)
@@ -25,13 +36,10 @@ func gopher1() {
 	for {
 		select {
 		case e := <-errCh:
-			printResults(results)
-			fmt.Printf("%v", e)
-			return
+			return results, e
 		case <-done:
 			wg.Wait()
-			printResults(results)
-			return
+			return results, nil
 		default:
 			workers <- true
 			wg.Add(1)
@@ -62,7 +70,7 @@ type theResult struct {
 	Err    error
 }
 
-func gopher2() {
+func roshGopher() {
 	done := make(chan struct{})
 	defer close(done)
 
