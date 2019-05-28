@@ -7,17 +7,19 @@ import (
 	"sync/atomic"
 )
 
-var theLimit int64 = 50
-
+var theLimit int64 = 50000
+var mux sync.Mutex
 func main() {
-	roshGopher()
+	junGopher()
 }
 
 func junGopher() {
 	result, e := subJunGopher()
 	if e != nil {
 		fmt.Printf("%v\n", e)
+		mux.Lock()
 		printResults(result)
+		mux.Unlock()
 		return
 	}
 
@@ -25,7 +27,6 @@ func junGopher() {
 }
 
 func subJunGopher() (map[int64]int64, error) {
-	var mux sync.Mutex
 	done := make(chan bool, 1)
 	errCh := make(chan error, 1)
 	workers := make(chan bool, 10)
@@ -49,9 +50,6 @@ func subJunGopher() (map[int64]int64, error) {
 					wg.Done()
 				}()
 				pg := atomic.AddInt64(&page, 1)
-				if pg == 100 {
-					done <- true
-				}
 				res, err := process(pg, theLimit)
 				if err != nil {
 					errCh <- err
@@ -59,6 +57,9 @@ func subJunGopher() (map[int64]int64, error) {
 				mux.Lock()
 				results[pg] = res
 				mux.Unlock()
+				if pg == 100 {
+					done <- true
+				}
 			}()
 		}
 	}
