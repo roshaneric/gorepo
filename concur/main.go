@@ -8,18 +8,18 @@ import (
 )
 
 var theLimit int64 = 50000
-var mux sync.Mutex
 func main() {
+	fmt.Println("**** Control workers through channel ****")
 	junGopher()
+	fmt.Println("**** Control workers through loop ****")
+	roshGopher()
 }
 
 func junGopher() {
 	result, e := subJunGopher()
 	if e != nil {
 		fmt.Printf("%v\n", e)
-		mux.Lock()
 		printResults(result)
-		mux.Unlock()
 		return
 	}
 
@@ -32,6 +32,7 @@ func subJunGopher() (map[int64]int64, error) {
 	workers := make(chan bool, 10)
 	results := make(map[int64]int64)
 	page := int64(0)
+	var mux sync.Mutex
 	var wg sync.WaitGroup
 
 	for {
@@ -53,6 +54,7 @@ func subJunGopher() (map[int64]int64, error) {
 				res, err := process(pg, theLimit)
 				if err != nil {
 					errCh <- err
+					return
 				}
 				mux.Lock()
 				results[pg] = res
