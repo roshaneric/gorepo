@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 )
 
-var theLimit int64 = 50
+var theLimit int64 = 500
 
 func main() {
 	fmt.Println("**** Control workers through channel, unknown end ****")
@@ -19,7 +19,10 @@ func main() {
 }
 
 func channelGopher() {
-	result, e := subChannelGopher()
+	var mux sync.Mutex
+	defer mux.Unlock()
+	result, e := subChannelGopher(&mux)
+	mux.Lock()
 	if e != nil {
 		fmt.Printf("%v\n", e)
 		printResults(result)
@@ -29,13 +32,12 @@ func channelGopher() {
 	printResults(result)
 }
 
-func subChannelGopher() (map[int64]int64, error) {
+func subChannelGopher(mux *sync.Mutex) (map[int64]int64, error) {
 	done := make(chan bool, 1)
 	errCh := make(chan error, 1)
 	workers := make(chan bool, 10)
 	results := make(map[int64]int64)
 	page := int64(0)
-	var mux sync.Mutex
 	var wg sync.WaitGroup
 
 	for {
@@ -151,7 +153,7 @@ func subLoopChannelGopher() (map[int64]int64, error) {
 			res, err := process(pg, theLimit)
 			if err != nil {
 				select {
-				case errCh <- err: //since we are returning on first err, we need to make this non-clocking for multiple errs
+				case errCh <- err: //since we are returning on first err, we need to make this non-blocking for multiple errs
 				default:
 				}
 				return
